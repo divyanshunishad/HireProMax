@@ -33,6 +33,10 @@ PGPORT = os.getenv("PGPORT", "5432")
 DATABASE_URL = os.getenv("DATABASE_URL", 
     f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{PGHOST}:{PGPORT}/{POSTGRES_DB}")
 
+logger.info(f"Database host: {PGHOST}")
+logger.info(f"Database port: {PGPORT}")
+logger.info(f"Database name: {POSTGRES_DB}")
+
 # SQLAlchemy configuration
 engine = create_engine(
     DATABASE_URL,
@@ -40,8 +44,18 @@ engine = create_engine(
     max_overflow=10,
     pool_timeout=30,
     pool_recycle=1800,
-    echo=False
+    echo=True,  # Enable SQL query logging
+    pool_pre_ping=True  # Enable connection health checks
 )
+
+# Test database connection
+try:
+    with engine.connect() as connection:
+        connection.execute("SELECT 1")
+        logger.info("Database connection test successful")
+except Exception as e:
+    logger.error(f"Database connection test failed: {str(e)}")
+    raise
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

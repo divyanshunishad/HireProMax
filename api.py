@@ -412,4 +412,33 @@ async def get_scraper_stats(time_window: int = 3600):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    import os
+    
+    # Get port from environment variable or default to 8000
+    port = int(os.getenv("PORT", 8000))
+    
+    # Log database connection attempt
+    logger.info("Attempting to connect to database...")
+    try:
+        # Test database connection
+        db = next(get_db())
+        db.execute("SELECT 1")
+        logger.info("Database connection successful")
+        
+        # Create tables
+        logger.info("Creating database tables...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Database connection failed: {str(e)}")
+        raise
+    
+    # Start the application
+    logger.info(f"Starting application on port {port}")
+    uvicorn.run(
+        "api:app",
+        host="0.0.0.0",
+        port=port,
+        log_level="info",
+        reload=False
+    ) 
