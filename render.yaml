@@ -16,19 +16,19 @@ services:
       - key: POSTGRES_DB
         value: railway
       - key: PGHOST
-        value: ${{RAILWAY_PRIVATE_DOMAIN}}
+        value: mainline.proxy.rlwy.net
       - key: PGPORT
         value: "5432"
       - key: PGDATABASE
-        value: ${{POSTGRES_DB}}
+        value: railway
       - key: PGPASSWORD
-        value: ${{POSTGRES_PASSWORD}}
+        value: NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr
       - key: PGUSER
-        value: ${{POSTGRES_USER}}
+        value: postgres
       - key: DATABASE_URL
-        value: postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
+        value: postgresql://postgres:NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr@mainline.proxy.rlwy.net:5432/railway
       - key: DATABASE_PUBLIC_URL
-        value: postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
+        value: postgresql://postgres:NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr@mainline.proxy.rlwy.net:5432/railway
       - key: SSL_CERT_DAYS
         value: "820"
       - key: RAILWAY_DEPLOYMENT_DRAINING_SECONDS
@@ -54,19 +54,19 @@ services:
       - key: POSTGRES_DB
         value: railway
       - key: PGHOST
-        value: ${{RAILWAY_PRIVATE_DOMAIN}}
+        value: mainline.proxy.rlwy.net
       - key: PGPORT
         value: "5432"
       - key: PGDATABASE
-        value: ${{POSTGRES_DB}}
+        value: railway
       - key: PGPASSWORD
-        value: ${{POSTGRES_PASSWORD}}
+        value: NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr
       - key: PGUSER
-        value: ${{POSTGRES_USER}}
+        value: postgres
       - key: DATABASE_URL
-        value: postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
+        value: postgresql://postgres:NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr@mainline.proxy.rlwy.net:5432/railway
       - key: DATABASE_PUBLIC_URL
-        value: postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
+        value: postgresql://postgres:NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr@mainline.proxy.rlwy.net:5432/railway
       - key: SSL_CERT_DAYS
         value: "820"
       - key: RAILWAY_DEPLOYMENT_DRAINING_SECONDS
