@@ -759,6 +759,13 @@ def stop_scraping():
     """Stop the scraping process"""
     handle_interrupt(None, None)
 
+def get_scraping_status():
+    """Get the current scraping status"""
+    with state_lock:
+        # Update system info before returning status
+        update_system_info()
+        return scraping_status.copy()
+
 if __name__ == "__main__":
     try:
         run_all_scrapers()
