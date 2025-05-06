@@ -300,8 +300,25 @@ def recover_from_state():
     try:
         state = load_state()
         if not state:
-            logger.error("No valid state found for recovery")
-            return False
+            logger.info("No previous state found, starting fresh")
+            # Initialize fresh state
+            with state_lock:
+                scraping_status.update({
+                    "is_running": False,
+                    "is_paused": False,
+                    "current_source": None,
+                    "state": ScraperState.IDLE.value,
+                    "pause_strategy": PauseStrategy.GRACEFUL.value,
+                    "recovery_attempts": 0,
+                    "start_time": None,
+                    "end_time": None,
+                    "error": None,
+                    "total_jobs_scraped": 0,
+                    "last_updated": None,
+                    "last_save_time": None,
+                    "interrupted": False
+                })
+            return True
         
         with state_lock:
             scraping_status.update(state)

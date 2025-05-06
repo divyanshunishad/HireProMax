@@ -17,6 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError, OperationalError
 from sqlalchemy import text
 import os
 import asyncio
+from sqlalchemy import inspect
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -44,6 +45,12 @@ app.add_middleware(
 try:
     logger.info("Creating database tables...")
     Base.metadata.create_all(bind=engine)
+    # Verify tables exist
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    logger.info(f"Created tables: {tables}")
+    if not all(table in tables for table in ['regular_jobs', 'freshers_jobs', 'internship_jobs']):
+        raise Exception("Not all required tables were created")
     logger.info("Database tables created successfully")
 except Exception as e:
     logger.error(f"Error creating database tables: {str(e)}")
@@ -83,10 +90,17 @@ def get_filtered_jobs(db: Session, model_class, search: Optional[str] = None, lo
         if location:
             query = query.filter(model_class.company_location.ilike(f"%{location}%"))
         
-        return query.all()
+        jobs = query.all()
+        logger.info(f"Retrieved {len(jobs)} {model_class.__name__} jobs")
+        return jobs
     except SQLAlchemyError as e:
         logger.error(f"Database error in get_filtered_jobs: {str(e)}")
+        db.rollback()
         raise HTTPException(status_code=500, detail="Database error occurred")
+    except Exception as e:
+        logger.error(f"Unexpected error in get_filtered_jobs: {str(e)}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.middleware("http")
 async def track_requests(request: Request, call_next):
@@ -435,6 +449,12 @@ if __name__ == "__main__":
             # Create tables
             logger.info("Creating database tables...")
             Base.metadata.create_all(bind=engine)
+            # Verify tables exist
+            inspector = inspect(engine)
+            tables = inspector.get_table_names()
+            logger.info(f"Created tables: {tables}")
+            if not all(table in tables for table in ['regular_jobs', 'freshers_jobs', 'internship_jobs']):
+                raise Exception("Not all required tables were created")
             logger.info("Database tables created successfully")
             break
         except OperationalError as e:
