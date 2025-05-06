@@ -1,0 +1,71 @@
+services:
+  - type: web
+    name: hirepro-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT --workers 4
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        value: bbHPalsIKWBPMlnaWMlFpHZUvBJPRGwl
+      - key: POSTGRES_DB
+        value: railway
+      - key: PGHOST
+        sync: false
+      - key: PGPORT
+        value: "5432"
+      - key: PGDATABASE
+        sync: false
+      - key: PGPASSWORD
+        sync: false
+      - key: PGUSER
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_PUBLIC_URL
+        sync: false
+      - key: SSL_CERT_DAYS
+        value: "820"
+      - key: RAILWAY_DEPLOYMENT_DRAINING_SECONDS
+        value: "60"
+      - key: PGDATA
+        value: "/var/lib/postgresql/data/pgdata"
+
+  - type: cron
+    name: hirepro-scraper
+    env: python
+    schedule: "0 */6 * * *"  # Run every 6 hours
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scraper.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        value: bbHPalsIKWBPMlnaWMlFpHZUvBJPRGwl
+      - key: POSTGRES_DB
+        value: railway
+      - key: PGHOST
+        sync: false
+      - key: PGPORT
+        value: "5432"
+      - key: PGDATABASE
+        sync: false
+      - key: PGPASSWORD
+        sync: false
+      - key: PGUSER
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_PUBLIC_URL
+        sync: false
+      - key: SSL_CERT_DAYS
+        value: "820"
+      - key: RAILWAY_DEPLOYMENT_DRAINING_SECONDS
+        value: "60"
+      - key: PGDATA
+        value: "/var/lib/postgresql/data/pgdata" 
