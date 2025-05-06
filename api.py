@@ -13,7 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from scraper import run_all_scrapers, get_scraping_status, stop_scraping
 from request_tracker import request_tracker
 import logging
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, OperationalError
 from sqlalchemy import text
 import os
 import asyncio
@@ -413,25 +413,39 @@ async def get_scraper_stats(time_window: int = 3600):
 if __name__ == "__main__":
     import uvicorn
     import os
+    import time
     
     # Get port from environment variable or default to 8000
     port = int(os.getenv("PORT", 8000))
     
     # Log database connection attempt
     logger.info("Attempting to connect to database...")
-    try:
-        # Test database connection
-        db = next(get_db())
-        db.execute("SELECT 1")
-        logger.info("Database connection successful")
-        
-        # Create tables
-        logger.info("Creating database tables...")
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.error(f"Database connection failed: {str(e)}")
-        raise
+    max_retries = 5
+    retry_delay = 5
+    
+    for attempt in range(max_retries):
+        try:
+            # Test database connection
+            db = next(get_db())
+            db.execute("SELECT 1")
+            logger.info("Database connection successful")
+            
+            # Create tables
+            logger.info("Creating database tables...")
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully")
+            break
+        except OperationalError as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"Database connection attempt {attempt + 1} failed: {str(e)}")
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                logger.error(f"Failed to connect to database after {max_retries} attempts")
+                raise
+        except Exception as e:
+            logger.error(f"Database connection failed: {str(e)}")
+            raise
     
     # Start the application
     logger.info(f"Starting application on port {port}")
