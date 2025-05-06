@@ -2,7 +2,9 @@ services:
   - type: web
     name: hirepro-api
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
     startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT --workers 4
     envVars:
       - key: PYTHON_VERSION
@@ -10,23 +12,23 @@ services:
       - key: POSTGRES_USER
         value: postgres
       - key: POSTGRES_PASSWORD
-        value: bbHPalsIKWBPMlnaWMlFpHZUvBJPRGwl
+        value: NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr
       - key: POSTGRES_DB
         value: railway
       - key: PGHOST
-        sync: false
+        value: ${{RAILWAY_PRIVATE_DOMAIN}}
       - key: PGPORT
         value: "5432"
       - key: PGDATABASE
-        sync: false
+        value: ${{POSTGRES_DB}}
       - key: PGPASSWORD
-        sync: false
+        value: ${{POSTGRES_PASSWORD}}
       - key: PGUSER
-        sync: false
+        value: ${{POSTGRES_USER}}
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
       - key: DATABASE_PUBLIC_URL
-        sync: false
+        value: postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
       - key: SSL_CERT_DAYS
         value: "820"
       - key: RAILWAY_DEPLOYMENT_DRAINING_SECONDS
@@ -38,7 +40,9 @@ services:
     name: hirepro-scraper
     env: python
     schedule: "0 */6 * * *"  # Run every 6 hours
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
     startCommand: python scraper.py
     envVars:
       - key: PYTHON_VERSION
@@ -46,23 +50,23 @@ services:
       - key: POSTGRES_USER
         value: postgres
       - key: POSTGRES_PASSWORD
-        value: bbHPalsIKWBPMlnaWMlFpHZUvBJPRGwl
+        value: NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr
       - key: POSTGRES_DB
         value: railway
       - key: PGHOST
-        sync: false
+        value: ${{RAILWAY_PRIVATE_DOMAIN}}
       - key: PGPORT
         value: "5432"
       - key: PGDATABASE
-        sync: false
+        value: ${{POSTGRES_DB}}
       - key: PGPASSWORD
-        sync: false
+        value: ${{POSTGRES_PASSWORD}}
       - key: PGUSER
-        sync: false
+        value: ${{POSTGRES_USER}}
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
       - key: DATABASE_PUBLIC_URL
-        sync: false
+        value: postgresql://${{PGUSER}}:${{POSTGRES_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{PGDATABASE}}
       - key: SSL_CERT_DAYS
         value: "820"
       - key: RAILWAY_DEPLOYMENT_DRAINING_SECONDS

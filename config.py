@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Database configuration
 POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "bbHPalsIKWBPMlnaWMlFpHZUvBJPRGwl")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr")
 POSTGRES_DB = os.getenv("POSTGRES_DB", "railway")
 PGHOST = os.getenv("PGHOST", "localhost")
 PGPORT = os.getenv("PGPORT", "5432")
