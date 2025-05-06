@@ -414,9 +414,11 @@ if __name__ == "__main__":
     import uvicorn
     import os
     import time
+    from sqlalchemy.exc import OperationalError
     
     # Get port from environment variable or default to 8000
     port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting application on port {port}")
     
     # Log database connection attempt
     logger.info("Attempting to connect to database...")
@@ -448,11 +450,17 @@ if __name__ == "__main__":
             raise
     
     # Start the application
-    logger.info(f"Starting application on port {port}")
-    uvicorn.run(
-        "api:app",
-        host="0.0.0.0",
-        port=port,
-        log_level="info",
-        reload=False
-    ) 
+    try:
+        logger.info(f"Starting uvicorn server on port {port}")
+        uvicorn.run(
+            "api:app",
+            host="0.0.0.0",
+            port=port,
+            log_level="info",
+            reload=False,
+            timeout_keep_alive=30,
+            timeout_graceful_shutdown=30
+        )
+    except Exception as e:
+        logger.error(f"Failed to start uvicorn server: {str(e)}")
+        raise 

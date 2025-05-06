@@ -33,6 +33,10 @@ def get_database_url():
         # If DATABASE_URL starts with postgres://, change it to postgresql://
         if database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql://", 1)
+        
+        # Log the URL format for debugging (without credentials)
+        safe_url = database_url.split("@")[-1] if "@" in database_url else database_url
+        logger.info(f"Using DATABASE_URL with host: {safe_url}")
         return database_url
     
     # Fallback to individual components
@@ -41,6 +45,13 @@ def get_database_url():
     POSTGRES_DB = os.getenv("POSTGRES_DB", "railway")
     PGHOST = os.getenv("PGHOST", "localhost")
     PGPORT = os.getenv("PGPORT", "5432")
+    
+    # Log the components for debugging
+    logger.info(f"Using individual database components:")
+    logger.info(f"  Host: {PGHOST}")
+    logger.info(f"  Port: {PGPORT}")
+    logger.info(f"  Database: {POSTGRES_DB}")
+    logger.info(f"  User: {POSTGRES_USER}")
     
     return f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{PGHOST}:{PGPORT}/{POSTGRES_DB}"
 
@@ -65,11 +76,12 @@ def create_db_engine(max_retries=5, retry_delay=5):
                 echo=True,  # Enable SQL query logging
                 pool_pre_ping=True,  # Enable connection health checks
                 connect_args={
-                    "connect_timeout": 10,  # Connection timeout in seconds
+                    "connect_timeout": 30,  # Increased timeout to 30 seconds
                     "keepalives": 1,
                     "keepalives_idle": 30,
                     "keepalives_interval": 10,
-                    "keepalives_count": 5
+                    "keepalives_count": 5,
+                    "application_name": "hirepro_api"  # Add application name for better monitoring
                 }
             )
             
