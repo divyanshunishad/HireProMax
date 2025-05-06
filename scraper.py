@@ -188,37 +188,20 @@ def create_checkpoint(source_type: str, page: int, jobs_scraped: int):
     atomic_save_state()
 
 def atomic_save_state():
-    """Save state atomically using a temporary file"""
+    """Save state in memory for cloud environment"""
     try:
         with state_lock:
             # Update system info before saving
             update_system_info()
-            
-            # Create temporary file
-            temp_dir = Path("state")
-            temp_dir.mkdir(exist_ok=True)
-            temp_file = temp_dir / TEMP_STATE_FILE
-            
-            # Write to temporary file
-            with open(temp_file, 'w') as f:
-                json.dump(scraping_status, f, default=str)
-            
-            # Create backup of current state
-            if (temp_dir / STATE_FILE).exists():
-                shutil.copy2(temp_dir / STATE_FILE, temp_dir / BACKUP_STATE_FILE)
-            
-            # Atomic rename
-            target_file = temp_dir / STATE_FILE
-            shutil.move(str(temp_file), str(target_file))
             
             # Update last save time
             scraping_status["last_save_time"] = datetime.utcnow()
             for source in scraping_status["progress"].values():
                 source["last_save_time"] = datetime.utcnow()
             
-            logger.info("Scraping state saved successfully")
+            logger.info("Scraping state updated successfully")
     except Exception as e:
-        logger.error(f"Error saving scraping state: {str(e)}")
+        logger.error(f"Error updating scraping state: {str(e)}")
 
 def auto_save_worker():
     """Background thread for periodic state saving"""
@@ -241,55 +224,12 @@ def stop_auto_save_thread():
         auto_save_thread.join()
 
 def load_state():
-    """Load scraping state from file with enhanced error handling"""
+    """Load state from memory"""
     try:
-        state_dir = Path("state")
-        state_file = state_dir / STATE_FILE
-        backup_file = state_dir / BACKUP_STATE_FILE
-        
-        # Try to load main state file
-        if state_file.exists():
-            try:
-                with open(state_file, 'r') as f:
-                    state = json.load(f)
-                return convert_state_timestamps(state)
-            except Exception as e:
-                logger.error(f"Error loading main state file: {str(e)}")
-        
-        # If main state file fails, try backup
-        if backup_file.exists():
-            try:
-                with open(backup_file, 'r') as f:
-                    state = json.load(f)
-                logger.info("Loaded state from backup file")
-                return convert_state_timestamps(state)
-            except Exception as e:
-                logger.error(f"Error loading backup state file: {str(e)}")
-        
-        return None
+        with state_lock:
+            return scraping_status.copy()
     except Exception as e:
-        logger.error(f"Error in load_state: {str(e)}")
-        return None
-
-def convert_state_timestamps(state):
-    """Convert string timestamps to datetime objects"""
-    try:
-        for source in state["progress"].values():
-            for field in ["start_time", "end_time", "last_save_time"]:
-                if source.get(field):
-                    source[field] = datetime.fromisoformat(source[field])
-            # Convert checkpoint timestamps
-            for checkpoint in source.get("checkpoints", []):
-                if checkpoint.get("timestamp"):
-                    checkpoint["timestamp"] = datetime.fromisoformat(checkpoint["timestamp"])
-        
-        for field in ["start_time", "end_time", "last_updated", "last_save_time"]:
-            if state.get(field):
-                state[field] = datetime.fromisoformat(state[field])
-        
-        return state
-    except Exception as e:
-        logger.error(f"Error converting timestamps: {str(e)}")
+        logger.error(f"Error loading state: {str(e)}")
         return None
 
 def handle_interrupt(signum, frame):
@@ -543,35 +483,17 @@ def update_scraping_stats(response_time: float):
         ).total_seconds()
     atomic_save_state()
 
-def scrape_and_save_jobs(source_type: str) -> None:
-    """Scrape and save jobs for a specific source type with enhanced progress tracking"""
-    global scraping_status
-    
+async def scrape_and_save_jobs(source_type: str) -> None:
+    """Scrape and save jobs for a specific source type"""
     db = next(get_db())
-    JobModel = get_job_model(source_type)
-    
-    if not JobModel:
-        raise ValueError(f"Invalid source type: {source_type}")
+    job_details_batch = []
     
     try:
-        with state_lock:
-            scraping_status["current_source"] = source_type
-            scraping_status["progress"][source_type]["status"] = "in_progress"
-            scraping_status["progress"][source_type]["start_time"] = datetime.utcnow()
-            scraping_status["scraping_stats"]["start_time"] = datetime.utcnow()
-        atomic_save_state()
-        
-        # Clear existing jobs for this source
-        update_page_progress(source_type, 0, "Clearing existing jobs")
-        db.query(JobModel).delete()
-        db.commit()
-        logger.info(f"Cleared existing {source_type} jobs")
-        
-        # Determine URL based on source type
+        JobModel = get_job_model(source_type)
         url_map = {
-            "Regular": "https://www.talentd.in/jobs?page=",
-            "Freshers": "https://www.talentd.in/jobs/freshers?page=",
-            "Internships": "https://www.talentd.in/jobs/internships?page="
+            "Regular": "https://talentd.in/regular-jobs?page=",
+            "Freshers": "https://talentd.in/freshers-jobs?page=",
+            "Internships": "https://talentd.in/internships?page="
         }
         
         base_url = url_map[source_type]
@@ -607,7 +529,7 @@ def scrape_and_save_jobs(source_type: str) -> None:
                         update_progress(source_type, page, batch_success)
                     break
                 else:  # SCHEDULED
-                    pause_event.wait()
+                    await pause_event.wait()
                     pause_event.clear()
             
             if not scraping_status["is_running"]:
@@ -665,7 +587,7 @@ def scrape_and_save_jobs(source_type: str) -> None:
                     update_progress(source_type, page, batch_success)
                 
                 update_page_stats(source_type, len(job_cards), processed_jobs, saved_jobs, error_jobs)
-                time.sleep(DELAY_BETWEEN_PAGES)
+                await asyncio.sleep(DELAY_BETWEEN_PAGES)
                 
             except Exception as e:
                 error_msg = f"Error processing page {page} for {source_type}: {str(e)}"
@@ -694,7 +616,7 @@ def scrape_and_save_jobs(source_type: str) -> None:
     finally:
         db.close()
 
-def run_all_scrapers() -> None:
+async def run_all_scrapers() -> None:
     """Run scrapers for all job types with enhanced error handling"""
     global scraping_status
     
@@ -728,8 +650,8 @@ def run_all_scrapers() -> None:
             
             try:
                 logger.info(f"Starting scraper for {source} jobs")
-                scrape_and_save_jobs(source)
-                time.sleep(DELAY_BETWEEN_SOURCES)
+                await scrape_and_save_jobs(source)
+                await asyncio.sleep(DELAY_BETWEEN_SOURCES)
             except ScrapingError as e:
                 logger.error(f"Scraper failed for {source}: {str(e)}")
                 continue
@@ -768,7 +690,7 @@ def get_scraping_status():
 
 if __name__ == "__main__":
     try:
-        run_all_scrapers()
+        asyncio.run(run_all_scrapers())
     except Exception as e:
         logger.error(f"Fatal error in scraper: {str(e)}")
         raise 
