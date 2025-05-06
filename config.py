@@ -37,6 +37,14 @@ def get_database_url():
         # Log the URL format for debugging (without credentials)
         safe_url = database_url.split("@")[-1] if "@" in database_url else database_url
         logger.info(f"Using DATABASE_URL with host: {safe_url}")
+        
+        # Extract port from URL for logging
+        try:
+            port = safe_url.split(":")[-1].split("/")[0]
+            logger.info(f"Using port from DATABASE_URL: {port}")
+        except:
+            logger.warning("Could not extract port from DATABASE_URL")
+        
         return database_url
     
     # Fallback to individual components
@@ -44,7 +52,7 @@ def get_database_url():
     POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "NDyuFEyzHYHZxwGelhLhVJrnMBLtcKfr")
     POSTGRES_DB = os.getenv("POSTGRES_DB", "railway")
     PGHOST = os.getenv("PGHOST", "localhost")
-    PGPORT = os.getenv("PGPORT", "5432")
+    PGPORT = os.getenv("PGPORT", "30009")  # Updated default port
     
     # Log the components for debugging
     logger.info(f"Using individual database components:")
@@ -81,7 +89,8 @@ def create_db_engine(max_retries=5, retry_delay=5):
                     "keepalives_idle": 30,
                     "keepalives_interval": 10,
                     "keepalives_count": 5,
-                    "application_name": "hirepro_api"  # Add application name for better monitoring
+                    "application_name": "hirepro_api",  # Add application name for better monitoring
+                    "sslmode": "require"  # Enable SSL for Railway
                 }
             )
             
